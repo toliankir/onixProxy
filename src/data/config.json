@@ -1,4 +1,4 @@
 {
-    "appendBlock": "<div style=\"position:absolute; top:0; z-index: 9999; left: 50%;\">    <a style=\"color: red; font-size: 20px; font-weight: bold;\" href=\"http://localhost:3000\">&lt;&lt;&lt;GO BACK!</a></div>",
+    "appendBlock": "<div style=\"position:absolute; top:0; z-index: 9999; left: 50%;\">    <a style=\"color: red; font-size: 20px; font-weight: bold; margin-left: -50%;\" href=\"http://localhost:3000\">&lt;&lt;&lt;GO BACK!</a></div>",
     "port": 3000
 }

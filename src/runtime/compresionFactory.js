@@ -1,6 +1,6 @@
 const zlib = require('zlib');
 
-const compressorFactory = (() => {
+const compresionFactory = (() => {
     function codeZip(buffer) {
         return new Promise((resolve, reject) => {
             zlib.gzip(buffer, async (error, compress) => {
@@ -102,4 +102,4 @@ const compressorFactory = (() => {
     return getCompressor;
 })();
 
-module.exports = compressorFactory;
+module.exports = compresionFactory;
