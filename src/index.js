@@ -1,36 +1,50 @@
 const http = require('http');
+const url = require('url');
 const httpProxy = require('http-proxy');
-const zlib = require('zlib');
+const fs = require('fs');
+const compressorFactory = require('./runtime/compressorFactory');
+const config = require('./data/config');
 
 const proxy = httpProxy.createProxyServer();
 
+const PORT = config.port || 3000;
+
 proxy.on('proxyRes', (proxyRes, req, res) => {
+    const prevWritre = res.write;
+    const prevEnd = res.end;
     let buffer = Buffer.from('');
-    let output = '';
-    proxyRes.on('data', (chunk) => {
+
+    res.write = (chunk) => {
         buffer = Buffer.concat([buffer, chunk]);
-    }).on('end', () => {
-        console.log(buffer.toString());
-        output = zlib.gunzipSync(buffer).toString('utf8');
-    });
-    // proxyReq.setHeader('X-Special-Header', 'foo');
-    // proxyReq.write('123');
-    console.log(output);
-    res.write('<div style="position:absolute; left:50%; color:red;">123</div>');
+    };
+
+    res.end = async () => {
+        const compressor = compressorFactory(res.getHeader('content-encoding'));
+        const decodedData = await compressor.decode(buffer);
+        const data = decodedData.toString('utf8').replace('</body>', `${config.appendBlock}</body>`);
+        const compressData = await compressor.code(Buffer.from(data));
+        res.setHeader('Content-Length', compressData.length);
+        prevWritre.call(res, compressData);
+        prevEnd.call(res);
+    };
 });
 
 http.createServer((req, res) => {
-    proxy.web(req, res, {
-        target: 'https://github.com',
-        changeOrigin: true,
-    });
-}).listen(9001);
-
-http.createServer((req, res) => {
-    res.writeHead(200, { 'Content-Type': 'text/html'});
-    res.write(`<html>
-        <body>
-        <h1>Request to: ${req.url}</h1><p> ${JSON.stringify(req.headers, true, 2)}
-        </p></body></html>`);
-    res.end();
-}).listen(9000);
+    const { query: { host } } = url.parse(req.url, true);
+    if (!host) {
+        fs.readFile('./public/index.html', (err, data) => {
+            res.writeHead(200);
+            res.write(data);
+            res.end();
+        });
+        return;
+    }
+    try {
+        proxy.web(req, res, {
+            target: host,
+            changeOrigin: true,
+        });
+    } catch (proxyError) {
+        console.log(proxyError);
+    }
+}).listen(PORT);
