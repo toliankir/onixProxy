@@ -31,20 +31,19 @@ proxy.on('proxyRes', (proxyRes, req, res) => {
 
 http.createServer((req, res) => {
     const { query: { host } } = url.parse(req.url, true);
-    if (!host) {
-        fs.readFile('./public/index.html', (err, data) => {
-            res.writeHead(200);
-            res.write(data);
-            res.end();
-        });
+
+    if (!host && !global.host) {
         return;
     }
-    global.host = host;
+
+    if (host) {
+        global.host = host;
+    }
 
     try {
         res.setHeader('Cache-Control', 'no-cache');
         proxy.web(req, res, {
-            target: host,
+            target: global.host,
             changeOrigin: true,
             followRedirects: true,
             secure: true,
